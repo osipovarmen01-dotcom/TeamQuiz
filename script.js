@@ -160,8 +160,50 @@ function showAdministratorDashboard() {
   updatePlayersList();
   showWaitingView();
   
+  // Show welcome message for administrator
+  showAdminWelcomeMessage();
+  
   // Start polling for new players
   startAdminPolling();
+}
+
+// Show welcome message for administrator
+function showAdminWelcomeMessage() {
+  // Remove any existing welcome message
+  const existingWelcome = document.getElementById("admin-welcome");
+  if (existingWelcome) {
+    existingWelcome.remove();
+  }
+  
+  // Create welcome message
+  const welcomeDiv = document.createElement("div");
+  welcomeDiv.id = "admin-welcome";
+  welcomeDiv.style.cssText = `
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in;
+  `;
+  welcomeDiv.innerHTML = `
+    <strong>🔧 Administrator Access Granted</strong><br>
+    Welcome, ${currentPlayer}! You can now manage the quiz session.
+  `;
+  
+  // Insert at the top of admin dashboard
+  const adminStats = document.getElementById("admin-stats");
+  adminStats.parentNode.insertBefore(welcomeDiv, adminStats);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (welcomeDiv.parentNode) {
+      welcomeDiv.remove();
+    }
+  }, 5000);
 }
 
 // Start polling for administrator dashboard updates
@@ -313,20 +355,84 @@ function hideAllSections() {
   adminResultsDiv.classList.add("hidden");
 }
 
+// Show error message
+function showErrorMessage(message) {
+  // Remove any existing error message
+  const existingError = document.getElementById("error-message");
+  if (existingError) {
+    existingError.remove();
+  }
+  
+  // Create error message element
+  const errorDiv = document.createElement("div");
+  errorDiv.id = "error-message";
+  errorDiv.style.cssText = `
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in;
+  `;
+  errorDiv.textContent = message;
+  
+  // Insert after the input field
+  const inputField = document.getElementById("player-name");
+  inputField.parentNode.insertBefore(errorDiv, inputField.nextSibling);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (errorDiv.parentNode) {
+      errorDiv.remove();
+    }
+  }, 5000);
+  
+  // Focus back on input
+  inputField.focus();
+  inputField.select();
+}
+
 // Start game button handler
 startGameBtn.addEventListener("click", () => {
   const playerName = playerNameInput.value.trim();
-  if (playerName) {
-    currentPlayer = playerName;
-    localStorage.setItem('currentPlayer', currentPlayer);
-    
-    if (playerName.toLowerCase() === 'administrator') {
-      showAdministratorDashboard();
-    } else {
-      // Register player and wait for administrator to start game
-      registerPlayer(playerName);
-      showWaitingForGame();
-    }
+  
+  // Validate input
+  if (!playerName) {
+    showErrorMessage("Please enter your name");
+    return;
+  }
+  
+  if (playerName.length < 2) {
+    showErrorMessage("Name must be at least 2 characters long");
+    return;
+  }
+  
+  if (playerName.length > 20) {
+    showErrorMessage("Name must be 20 characters or less");
+    return;
+  }
+  
+  // Check for invalid characters
+  if (!/^[a-zA-Z0-9\s\-_]+$/.test(playerName)) {
+    showErrorMessage("Name can only contain letters, numbers, spaces, hyphens, and underscores");
+    return;
+  }
+  
+  currentPlayer = playerName;
+  localStorage.setItem('currentPlayer', currentPlayer);
+  
+  // Check for administrator access (case-insensitive)
+  if (playerName.toLowerCase() === 'administrator') {
+    // Clear any existing error styling
+    playerNameInput.classList.remove("error", "success");
+    showAdministratorDashboard();
+  } else {
+    // Register player and wait for administrator to start game
+    registerPlayer(playerName);
+    showWaitingForGame();
   }
 });
 
@@ -339,6 +445,40 @@ startGameAdminBtn.addEventListener("click", () => {
 playerNameInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
     startGameBtn.click();
+  }
+});
+
+// Real-time input validation
+playerNameInput.addEventListener("input", (e) => {
+  const value = e.target.value.trim();
+  
+  // Remove any existing error styling
+  playerNameInput.classList.remove("error", "success");
+  
+  // Remove any existing error message
+  const existingError = document.getElementById("error-message");
+  if (existingError) {
+    existingError.remove();
+  }
+  
+  if (value.length > 0) {
+    // Basic validation feedback
+    if (value.length < 2) {
+      playerNameInput.classList.add("error");
+    } else if (value.length >= 2 && value.length <= 20 && /^[a-zA-Z0-9\s\-_]+$/.test(value)) {
+      playerNameInput.classList.add("success");
+    } else {
+      playerNameInput.classList.add("error");
+    }
+  }
+});
+
+// Clear validation on focus
+playerNameInput.addEventListener("focus", () => {
+  playerNameInput.classList.remove("error", "success");
+  const existingError = document.getElementById("error-message");
+  if (existingError) {
+    existingError.remove();
   }
 });
 
