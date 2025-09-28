@@ -2,7 +2,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #FFA500 100%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -173,7 +173,7 @@ body {
   #start-game-btn {
     padding: 12px 30px;
     font-size: 1.1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0055A4 0%, #0078D4 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -183,7 +183,7 @@ body {
 
   #start-game-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 85, 164, 0.4);
   }
 
   /* Error message animation */
@@ -443,6 +443,42 @@ body {
   .cleanup-btn {
     background: #dc3545;
     color: white;
+  }
+
+  /* Logout button styles */
+  .logout-btn {
+    background: #6f42c1;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .logout-btn:hover {
+    background: #5a32a3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(111, 66, 193, 0.3);
+  }
+
+  .logout-btn-small {
+    background: #6f42c1;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .logout-btn-small:hover {
+    background: #5a32a3;
+    transform: scale(1.05);
   }
 
   #players-list {

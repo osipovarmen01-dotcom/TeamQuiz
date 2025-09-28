@@ -217,7 +217,8 @@ function showAdminWelcomeMessage() {
     <br><br>
     <button onclick="clearAllPlayers()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px;">Clear All Players</button>
     <button onclick="resetGame()" style="background: #ffc107; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px;">Reset Game</button>
-    <button onclick="debugLocalStorage()" style="background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Debug Data</button>
+    <button onclick="debugLocalStorage()" style="background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px;">Debug Data</button>
+    <button onclick="confirmLogout()" style="background: #6f42c1; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🚪 Log Out</button>
   `;
   
   // Insert at the top of admin dashboard
@@ -306,6 +307,46 @@ function debugLocalStorage() {
   console.log('========================');
 }
 
+// Logout function - remove user from game and clear session
+function logoutUser() {
+  if (currentPlayer) {
+    // Remove player from registered players list
+    const players = getRegisteredPlayers();
+    const updatedPlayers = players.filter(player => player.name !== currentPlayer);
+    localStorage.setItem('registeredPlayers', JSON.stringify(updatedPlayers));
+    
+    console.log(`User ${currentPlayer} has logged out and been removed from the game`);
+  }
+  
+  // Clear current session data
+  localStorage.removeItem('currentPlayer');
+  currentPlayer = null;
+  isAdministrator = false;
+  
+  // Stop any running timers
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  
+  // Stop admin polling if running
+  if (isAdministrator) {
+    isAdministrator = false;
+  }
+  
+  // Return to registration screen
+  showRegistration();
+  
+  console.log('User logged out successfully');
+}
+
+// Logout with confirmation
+function confirmLogout() {
+  if (confirm('Are you sure you want to log out? This will remove you from the game and you will need to register again to rejoin.')) {
+    logoutUser();
+  }
+}
+
 // Update player status
 function updatePlayerStatus(playerName, newStatus, additionalData = {}) {
   const players = getRegisteredPlayers();
@@ -386,6 +427,9 @@ function showWaitingForGame() {
       <p>The administrator will start the game when all players are ready.</p>
       <div style="margin-top: 20px;">
         <div class="loading-spinner"></div>
+      </div>
+      <div style="margin-top: 30px;">
+        <button onclick="confirmLogout()" class="logout-btn">🚪 Log Out</button>
       </div>
     </div>
   `;
@@ -523,6 +567,17 @@ function showQuiz() {
   hideAllSections();
   quizDiv.classList.remove("hidden");
   currentPlayerSpan.textContent = `Player: ${currentPlayer}`;
+  
+  // Add logout button to player info
+  const playerInfo = document.getElementById("player-info");
+  if (playerInfo && !playerInfo.querySelector('.logout-btn')) {
+    const logoutBtn = document.createElement("button");
+    logoutBtn.className = "logout-btn-small";
+    logoutBtn.innerHTML = "🚪";
+    logoutBtn.title = "Log Out";
+    logoutBtn.onclick = confirmLogout;
+    playerInfo.appendChild(logoutBtn);
+  }
   
   // Hide admin controls for regular players
   hideAdminControls();
@@ -1062,6 +1117,13 @@ function displayResults() {
   }
   
   message += "</div>";
+  
+  // Add logout button to results
+  message += `
+    <div style="margin-top: 30px; text-align: center;">
+      <button onclick="confirmLogout()" class="logout-btn">🚪 Log Out</button>
+    </div>
+  `;
   
   resultContainer.innerHTML = message;
   resultContainer.classList.remove("hidden");
