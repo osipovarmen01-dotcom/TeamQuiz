@@ -166,8 +166,27 @@ function showAdministratorDashboard() {
   // Start polling for new players
   startAdminPolling();
   
+  // Show admin controls
+  showAdminControls();
+  
   // Add debug info
   console.log('Admin dashboard opened. Current registered players:', getRegisteredPlayers());
+}
+
+// Show admin controls (admin only)
+function showAdminControls() {
+  const adminControls = document.querySelector('.admin-controls');
+  if (adminControls && isAdministrator) {
+    adminControls.style.display = 'flex';
+  }
+}
+
+// Hide admin controls (for non-admin users)
+function hideAdminControls() {
+  const adminControls = document.querySelector('.admin-controls');
+  if (adminControls) {
+    adminControls.style.display = 'none';
+  }
 }
 
 // Show welcome message for administrator
@@ -248,6 +267,33 @@ function resetGame() {
   }
   
   console.log('Game reset for new round');
+}
+
+// Clean up all users except administrator
+function cleanupUsersExceptAdmin() {
+  const players = getRegisteredPlayers();
+  const adminPlayers = players.filter(player => 
+    player.name.toLowerCase() === 'administrator'
+  );
+  
+  localStorage.setItem('registeredPlayers', JSON.stringify(adminPlayers));
+  registeredPlayers = adminPlayers;
+  
+  // Clear game state
+  gameStarted = false;
+  localStorage.removeItem('gameStarted');
+  localStorage.removeItem('gameFinished');
+  localStorage.removeItem('gameStartTime');
+  localStorage.removeItem('gameFinishedTime');
+  
+  // Update admin dashboard
+  if (isAdministrator) {
+    updateAdminStats();
+    updatePlayersList();
+    showWaitingView();
+  }
+  
+  console.log('Cleaned up all users except administrator. Remaining players:', adminPlayers);
 }
 
 // Debug function to show localStorage data
@@ -345,6 +391,9 @@ function showWaitingForGame() {
   `;
   answersContainer.innerHTML = "";
   nextButton.style.display = "none";
+  
+  // Hide admin controls for regular players
+  hideAdminControls();
   
   // Start polling for game start
   checkGameStart();
@@ -474,6 +523,10 @@ function showQuiz() {
   hideAllSections();
   quizDiv.classList.remove("hidden");
   currentPlayerSpan.textContent = `Player: ${currentPlayer}`;
+  
+  // Hide admin controls for regular players
+  hideAdminControls();
+  
   startQuiz();
 }
 
@@ -595,14 +648,38 @@ startGameBtn.addEventListener("click", () => {
 
 // Administrator start game button
 startGameAdminBtn.addEventListener("click", () => {
-  startGameForAllPlayers();
+  if (isAdministrator) {
+    const players = getRegisteredPlayers();
+    if (players.length === 0) {
+      alert('No players registered yet. Players need to register before starting the game.');
+      return;
+    }
+    startGameForAllPlayers();
+  } else {
+    console.log('Access denied: Administrator privileges required');
+  }
 });
 
-// Refresh players list button
+// Refresh players list button (admin only)
 document.getElementById("refresh-players-btn").addEventListener("click", () => {
-  updatePlayersList();
-  updateAdminStats();
-  console.log('Players list refreshed manually');
+  if (isAdministrator) {
+    updatePlayersList();
+    updateAdminStats();
+    console.log('Players list refreshed manually');
+  } else {
+    console.log('Access denied: Administrator privileges required');
+  }
+});
+
+// Cleanup users button (admin only)
+document.getElementById("cleanup-users-btn").addEventListener("click", () => {
+  if (isAdministrator) {
+    if (confirm('Are you sure you want to remove all users except administrator? This action cannot be undone.')) {
+      cleanupUsersExceptAdmin();
+    }
+  } else {
+    console.log('Access denied: Administrator privileges required');
+  }
 });
 
 // Enter key handler for name input
