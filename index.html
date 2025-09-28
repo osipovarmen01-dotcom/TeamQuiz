@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DELMIA IPC team</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="quiz-container">
+    <h1>DELMIA IPC team</h1>
+    <p class="quiz-description">Test your knowledge of the DELMIA IPC team members!</p>
+    
+    <!-- Registration Form -->
+    <div id="registration" class="hidden">
+      <h2>Enter Your Name</h2>
+      <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+      <button id="start-game-btn">Start Game</button>
+    </div>
+    
+    <!-- Administrator Dashboard -->
+    <div id="admin-dashboard" class="hidden">
+      <h2>Administrator Dashboard</h2>
+      <div id="admin-stats">
+        <div class="stat-item">
+          <span class="stat-label">Total Participants:</span>
+          <span id="total-participants">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Ready to Start:</span>
+          <span id="ready-participants">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Game Status:</span>
+          <span id="game-status">Waiting for Players</span>
+        </div>
+      </div>
+      
+      <!-- Waiting for Players View -->
+      <div id="waiting-view">
+        <h3>Registered Players</h3>
+        <div id="players-list"></div>
+        <button id="start-game-admin-btn" class="hidden">Start Game for All Players</button>
+        <p id="waiting-message">Waiting for players to register...</p>
+      </div>
+      
+      <!-- Game in Progress View -->
+      <div id="game-progress-view" class="hidden">
+        <div id="admin-question-display">
+          <div id="admin-question-text"></div>
+          <div id="admin-answers"></div>
+        </div>
+        <button id="admin-next-btn" class="hidden">Next Question</button>
+        <button id="admin-results-btn">View All Results</button>
+      </div>
+    </div>
+    
+    <!-- Regular Quiz -->
+    <div id="quiz" class="hidden">
+      <div id="player-info">
+        <span id="current-player">Player: </span>
+        <div id="timer-container">
+          <div id="timer">01:00</div>
+        </div>
+      </div>
+      <div id="question">Question text</div>
+      <div id="answers"></div>
+      <button id="next-btn">Next</button>
+    </div>
+    
+    <!-- Results -->
+    <div id="result" class="hidden"></div>
+    
+    <!-- Administrator Results -->
+    <div id="admin-results" class="hidden">
+      <h2>All Participants Results</h2>
+      <div id="results-table"></div>
+      <button id="back-to-admin">Back to Dashboard</button>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
