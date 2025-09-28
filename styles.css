@@ -440,14 +440,36 @@ body {
     font-weight: 500;
   }
 
+  .status-waiting {
+    background: #fff3cd;
+    color: #856404;
+  }
+
   .status-ready {
     background: #d4edda;
     color: #155724;
   }
 
-  .status-waiting {
-    background: #fff3cd;
-    color: #856404;
+  .status-playing {
+    background: #cce5ff;
+    color: #004085;
+    animation: pulse 2s infinite;
+  }
+
+  .status-finished {
+    background: #d1ecf1;
+    color: #0c5460;
+  }
+
+  .status-unknown {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .player-score {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 500;
   }
 
   #start-game-admin-btn {
@@ -483,7 +505,12 @@ body {
 
   .status-waiting-players { color: #ffc107; }
   .status-game-started { color: #28a745; }
-  .status-game-finished { color: #6c757d; }
+  .status-game-finished { 
+    color: #6c757d; 
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
 
   /* Loading Spinner */
   .loading-spinner {

@@ -165,6 +165,9 @@ function showAdministratorDashboard() {
   
   // Start polling for new players
   startAdminPolling();
+  
+  // Add debug info
+  console.log('Admin dashboard opened. Current registered players:', getRegisteredPlayers());
 }
 
 // Show welcome message for administrator
@@ -192,18 +195,128 @@ function showAdminWelcomeMessage() {
   welcomeDiv.innerHTML = `
     <strong>🔧 Administrator Access Granted</strong><br>
     Welcome, ${currentPlayer}! You can now manage the quiz session.
+    <br><br>
+    <button onclick="clearAllPlayers()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px;">Clear All Players</button>
+    <button onclick="resetGame()" style="background: #ffc107; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px;">Reset Game</button>
+    <button onclick="debugLocalStorage()" style="background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Debug Data</button>
   `;
   
   // Insert at the top of admin dashboard
   const adminStats = document.getElementById("admin-stats");
   adminStats.parentNode.insertBefore(welcomeDiv, adminStats);
   
-  // Auto-remove after 5 seconds
+  // Auto-remove after 10 seconds
   setTimeout(() => {
     if (welcomeDiv.parentNode) {
       welcomeDiv.remove();
     }
-  }, 5000);
+  }, 10000);
+}
+
+// Clear all registered players (for testing)
+function clearAllPlayers() {
+  localStorage.removeItem('registeredPlayers');
+  registeredPlayers = [];
+  updatePlayersList();
+  console.log('All players cleared');
+}
+
+// Reset game for new round
+function resetGame() {
+  // Clear game state
+  gameStarted = false;
+  localStorage.removeItem('gameStarted');
+  localStorage.removeItem('gameFinished');
+  localStorage.removeItem('gameStartTime');
+  localStorage.removeItem('gameFinishedTime');
+  
+  // Reset all players to waiting status
+  const players = getRegisteredPlayers();
+  players.forEach(player => {
+    player.status = 'waiting';
+    player.score = 0;
+    player.currentQuestion = 0;
+    player.completedAt = null;
+  });
+  localStorage.setItem('registeredPlayers', JSON.stringify(players));
+  
+  // Update admin dashboard
+  if (isAdministrator) {
+    updateAdminStats();
+    updatePlayersList();
+    showWaitingView();
+  }
+  
+  console.log('Game reset for new round');
+}
+
+// Debug function to show localStorage data
+function debugLocalStorage() {
+  console.log('=== LocalStorage Debug ===');
+  console.log('registeredPlayers:', localStorage.getItem('registeredPlayers'));
+  console.log('currentPlayer:', localStorage.getItem('currentPlayer'));
+  console.log('gameStarted:', localStorage.getItem('gameStarted'));
+  console.log('quizResults:', localStorage.getItem('quizResults'));
+  console.log('========================');
+}
+
+// Update player status
+function updatePlayerStatus(playerName, newStatus, additionalData = {}) {
+  const players = getRegisteredPlayers();
+  const playerIndex = players.findIndex(p => p.name === playerName);
+  
+  if (playerIndex !== -1) {
+    players[playerIndex].status = newStatus;
+    players[playerIndex].lastUpdate = new Date().toISOString();
+    
+    // Add any additional data (like score, current question, etc.)
+    Object.assign(players[playerIndex], additionalData);
+    
+    localStorage.setItem('registeredPlayers', JSON.stringify(players));
+    console.log(`Player ${playerName} status updated to ${newStatus}:`, players[playerIndex]);
+    
+    // Update admin dashboard if we're in admin mode
+    if (isAdministrator) {
+      updatePlayersList();
+    }
+    
+    // Check if all players are finished
+    if (newStatus === 'finished') {
+      checkAllPlayersFinished();
+    }
+  } else {
+    console.log(`Player ${playerName} not found for status update`);
+  }
+}
+
+// Get player status
+function getPlayerStatus(playerName) {
+  const players = getRegisteredPlayers();
+  const player = players.find(p => p.name === playerName);
+  return player ? player.status : null;
+}
+
+// Check if all players are finished
+function checkAllPlayersFinished() {
+  const players = getRegisteredPlayers();
+  const allFinished = players.length > 0 && players.every(player => player.status === 'finished');
+  
+  if (allFinished) {
+    console.log('All players have finished the game!');
+    // Update game status to finished
+    gameStarted = false;
+    localStorage.setItem('gameStarted', 'false');
+    localStorage.setItem('gameFinished', 'true');
+    localStorage.setItem('gameFinishedTime', new Date().toISOString());
+    
+    // Update admin dashboard if we're in admin mode
+    if (isAdministrator) {
+      updateAdminStats();
+      updatePlayersList();
+    }
+  }
+  
+  return allFinished;
 }
 
 // Start polling for administrator dashboard updates
@@ -240,14 +353,21 @@ function showWaitingForGame() {
 // Register a new player
 function registerPlayer(playerName) {
   const existingPlayers = getRegisteredPlayers();
+  console.log('Registering player:', playerName, 'Existing players:', existingPlayers);
+  
   if (!existingPlayers.find(p => p.name === playerName)) {
     existingPlayers.push({
       name: playerName,
-      status: 'ready',
-      timestamp: new Date().toISOString()
+      status: 'waiting', // Changed from 'ready' to 'waiting'
+      timestamp: new Date().toISOString(),
+      score: 0,
+      currentQuestion: 0
     });
     localStorage.setItem('registeredPlayers', JSON.stringify(existingPlayers));
     registeredPlayers = existingPlayers;
+    console.log('Player registered successfully. Updated list:', existingPlayers);
+  } else {
+    console.log('Player already exists:', playerName);
   }
 }
 
@@ -262,6 +382,8 @@ function updatePlayersList() {
   const players = getRegisteredPlayers();
   registeredPlayers = players;
   
+  console.log('Admin dashboard - updating players list:', players);
+  
   if (players.length === 0) {
     playersList.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No players registered yet...</p>';
     startGameAdminBtn.classList.add("hidden");
@@ -271,16 +393,39 @@ function updatePlayersList() {
     players.forEach(player => {
       const playerDiv = document.createElement("div");
       playerDiv.classList.add("player-item");
+      
+      // Get status display and class
+      const statusInfo = getStatusDisplay(player.status);
+      
       playerDiv.innerHTML = `
         <span class="player-name">${player.name}</span>
-        <span class="player-status status-ready">Ready</span>
+        <span class="player-status ${statusInfo.class}">${statusInfo.display}</span>
+        ${player.score !== undefined ? `<span class="player-score">Score: ${player.score}</span>` : ''}
       `;
       playersList.appendChild(playerDiv);
     });
     
-    startGameAdminBtn.classList.remove("hidden");
-    waitingMessage.textContent = `${players.length} player(s) ready. Click "Start Game" to begin.`;
+    // Update button visibility based on game state
+    if (gameStarted) {
+      startGameAdminBtn.classList.add("hidden");
+      waitingMessage.textContent = `Game in progress - ${players.length} player(s) registered`;
+    } else {
+      startGameAdminBtn.classList.remove("hidden");
+      waitingMessage.textContent = `${players.length} player(s) waiting. Click "Start Game" to begin.`;
+    }
   }
+}
+
+// Get status display information
+function getStatusDisplay(status) {
+  const statusMap = {
+    'waiting': { display: '⏳ Waiting', class: 'status-waiting' },
+    'ready': { display: '✅ Ready', class: 'status-ready' },
+    'playing': { display: '🎮 Playing', class: 'status-playing' },
+    'finished': { display: '🏁 Finished', class: 'status-finished' }
+  };
+  
+  return statusMap[status] || { display: '❓ Unknown', class: 'status-unknown' };
 }
 
 // Show waiting view in administrator dashboard
@@ -304,12 +449,24 @@ function showGameProgressView() {
 function startGameForAllPlayers() {
   gameStarted = true;
   localStorage.setItem('gameStarted', 'true');
+  
+  // Update all players from 'waiting' to 'ready'
+  const players = getRegisteredPlayers();
+  players.forEach(player => {
+    if (player.status === 'waiting') {
+      player.status = 'ready';
+    }
+  });
+  localStorage.setItem('registeredPlayers', JSON.stringify(players));
+  
   showGameProgressView();
   updateAdminStats();
+  updatePlayersList();
   
   // Notify all players that game has started
-  // This would typically be done through a server, but for localStorage we'll use a flag
   localStorage.setItem('gameStartTime', new Date().toISOString());
+  
+  console.log('Game started! All players status updated to ready:', players);
 }
 
 // Show regular quiz
@@ -441,6 +598,13 @@ startGameAdminBtn.addEventListener("click", () => {
   startGameForAllPlayers();
 });
 
+// Refresh players list button
+document.getElementById("refresh-players-btn").addEventListener("click", () => {
+  updatePlayersList();
+  updateAdminStats();
+  console.log('Players list refreshed manually');
+});
+
 // Enter key handler for name input
 playerNameInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
@@ -489,7 +653,26 @@ function updateAdminStats() {
   
   totalParticipantsSpan.textContent = players.length;
   readyParticipantsSpan.textContent = players.length;
-  currentQuestionNumberSpan.textContent = currentQuestionIndex + 1;
+  
+  // Update game status
+  const gameFinished = localStorage.getItem('gameFinished') === 'true';
+  
+  if (gameFinished) {
+    gameStatusSpan.textContent = "Game Finished";
+    gameStatusSpan.className = "status-game-finished";
+  } else if (gameStarted) {
+    gameStatusSpan.textContent = "Game in Progress";
+    gameStatusSpan.className = "status-game-started";
+  } else {
+    gameStatusSpan.textContent = "Waiting for Players";
+    gameStatusSpan.className = "status-waiting-players";
+  }
+  
+  console.log('Admin stats updated:', {
+    totalPlayers: players.length,
+    gameStarted: gameStarted,
+    players: players
+  });
 }
 
 function showAdminQuestion() {
@@ -552,6 +735,10 @@ function startQuiz() {
   userAnswers = [];
   nextButton.innerText = "Next";
   resultContainer.classList.add("hidden");
+  
+  // Update player status to playing
+  updatePlayerStatus(currentPlayer, 'playing', { currentQuestion: 0 });
+  
   showQuestion();
 }
 
@@ -759,6 +946,13 @@ function displayResults() {
   } else {
     message += "<br><br>💪 Don't give up! There's always more to learn about your team!";
   }
+  
+  // Update player status to finished
+  updatePlayerStatus(currentPlayer, 'finished', { 
+    score: finalScore, 
+    percentage: percentage,
+    completedAt: new Date().toISOString()
+  });
   
   // Save results
   saveResult(currentPlayer, finalScore, percentage);
